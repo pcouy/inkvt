@@ -11,7 +11,7 @@ else
 	CXXFLAGS ?= -O2
 endif
 
-CPPFLAGS += -Ilibvterm/include -DGITHASH=$(GITHASH)
+CPPFLAGS += -Ilibvterm/include -isystemFBInk/libi2c-staged/include -DGITHASH=$(GITHASH)
 CFLAGS   += -Wall -falign-labels=8
 CXXFLAGS += -Wall -falign-labels=8
 
@@ -61,7 +61,7 @@ ifdef INPUT_SERIAL
 	CPPFLAGS += -DINPUT_SERIAL
 endif
 
-LDFLAGS+=-lm -Lbuild -lutil
+LDFLAGS+=-lm -Lbuild -lutil -LFBInk/libi2c-staged/lib/
 
 all: linux kobo
 .PHONY: linux kobo clean all
@@ -72,7 +72,7 @@ src/_kbsend.hpp: src/kbsend.html
 linux: build/libfbink.a build/libvterm.a src/_kbsend.hpp
 	python3 keymap.py > src/_keymap.hpp
 	python3 src/kblayout.py > src/_kblayout.hpp
-	g++ $(CPPFLAGS) $(CXXFLAGS) $(EXTRA_WARNINGS) src/main.cpp -lvterm -lfbink -o build/inkvt.host $(LDFLAGS)
+	g++ $(CPPFLAGS) $(CXXFLAGS) $(EXTRA_WARNINGS) src/main.cpp -lvterm -lfbink -o build/inkvt.host $(LDFLAGS) -li2c
 ifndef DEBUG
 	strip --strip-unneeded build/inkvt.host
 endif
@@ -80,7 +80,7 @@ endif
 kobo: build/fbdepth build/libfbink_kobo.a build/libvterm_kobo.a src/_kbsend.hpp
 	python3 keymap.py > src/_keymap.hpp
 	python3 src/kblayout.py > src/_kblayout.hpp
-	$(CROSS_TC)-g++ -DTARGET_KOBO $(CPPFLAGS) $(CXXFLAGS) $(EXTRA_WARNINGS) src/main.cpp -lvterm_kobo -lfbink_kobo -o build/inkvt.armhf $(LDFLAGS) $(STATIC_STL_FLAG)
+	$(CROSS_TC)-g++ -DTARGET_KOBO $(CPPFLAGS) $(CXXFLAGS) $(EXTRA_WARNINGS) src/main.cpp -lvterm_kobo -lfbink_kobo -o build/inkvt.armhf $(LDFLAGS) -li2c $(STATIC_STL_FLAG)
 ifndef DEBUG
 	$(CROSS_TC)-strip --strip-unneeded build/inkvt.armhf
 	upx build/inkvt.armhf || echo "install UPX for smaller executables"
@@ -127,7 +127,7 @@ endif
 build/fbdepth:
 	mkdir -p build
 	make -C FBInk clean
-	make -C FBInk CROSS_TC=$(CROSS_TC) KOBO=true utils
+	make -C FBInk CROSS_TC=$(CROSS_TC) KOBO=true fbdepth
 ifdef DEBUG
 	cp FBInk/Debug/fbdepth build/fbdepth
 else
